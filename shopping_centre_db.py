@@ -37,7 +37,7 @@ def add_shop(conn, shop):
    :return: shop id
    """
    sql = '''INSERT INTO shops(name, specialization, address)
-             VALUES(?,?)'''
+             VALUES(?,?,?)'''
    cur = conn.cursor()
    cur.execute(sql, shop)
    conn.commit()
@@ -67,7 +67,7 @@ def select_product_by_name(conn, name):
    :return:
    """
    cur = conn.cursor()
-   cur.execute("SELECT * FROM products WHERE name=?", (name,))
+   cur.execute("SELECT * FROM products WHERE name LIKE ?", ('%' + name + '%',))
 
    rows = cur.fetchall()
    return rows
@@ -106,7 +106,7 @@ def select_where(conn, table, **query):
 
 def update(conn, table, id, **kwargs):
    """
-   update status, begin_date, and end date of a task
+   update table
    :param conn:
    :param table: table name
    :param id: row id
@@ -161,3 +161,114 @@ def delete_all(conn, table):
    cur.execute(sql)
    conn.commit()
    print("Deleted")
+
+
+if __name__ == "__main__":
+
+   create_shops_sql = """
+   -- shops table
+   CREATE TABLE IF NOT EXISTS shops (
+      id integer PRIMARY KEY,
+      name text NOT NULL,
+      specialization text,
+      address text
+   );
+   """
+
+   create_products_sql = """
+   -- zadanie table
+   CREATE TABLE IF NOT EXISTS products (
+      id integer PRIMARY KEY,
+      shop_id integer NOT NULL,
+      name VARCHAR(250) NOT NULL,
+      description TEXT,
+      number integer NOT NULL,
+      price integer NOT NULL,
+      FOREIGN KEY (shop_id) REFERENCES shops (id)
+   );
+   """
+
+   db_file = "shoppin_centre.db"
+
+   conn = create_connection(db_file)
+   if conn is not None:
+        execute_sql(conn, create_shops_sql)
+        execute_sql(conn, create_products_sql)
+
+        shop1 = ("LEGO","toys","2nd store")
+        shop1_id = add_shop(conn, shop1)
+
+        shop2 = ("Mercedes","cars","0 store")
+        shop2_id = add_shop(conn, shop2)
+
+        shop3 = ("Tesco","food","1st store")
+        shop3_id = add_shop(conn, shop3)
+
+
+        produt1 = (
+            shop1_id,
+            "LEGO1",
+            "lsdkjlfdssfd",
+            1000,
+            200
+        )
+
+        product1_id = add_product(conn, produt1)
+
+        produt2 = (
+            shop1_id,
+            "LEGO2",
+            "lslfk;kfslfdssfd",
+            2000,
+            400
+        )
+
+        product2_id = add_product(conn, produt2)
+
+        produt3 = (
+            shop1_id,
+            "LEGO3",
+            "sdjlksfdl",
+            1200,
+            20
+        )
+        product3_id = add_product(conn, produt3)
+
+ 
+        produt4 = (
+            shop2_id,
+            "Marcedes1",
+            "sdfjisjdfjfsd",
+            120000,
+            10
+        )
+        product4_id = add_product(conn, produt4)       
+
+
+        produt5 = (
+            shop2_id,
+            "bread",
+            "jsdjsdkfsd",
+            5,
+            1000
+        )
+        product5_id = add_product(conn, produt5) 
+
+
+        res = select_where(conn, "shops", id=1)
+        print(f"Number of shops with id=1: {len(res)}")
+
+        res = select_where(conn, "products",shop_id=1)
+        print(f"Number of products in shop with id = 1: {len(res)}")
+
+        update(conn, "products", 2, description="bestseller")
+
+        res = select_product_by_name(conn,"LEGO")
+        
+        for product in res:
+            print(product) 
+
+        delete_all(conn,'products')
+        delete_all(conn,'shops')
+        
+        conn.close()
